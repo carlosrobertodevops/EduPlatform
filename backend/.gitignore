@@ -1,0 +1,50 @@
+.env
+.venv
+env/
+venv/
+env.bak/
+venv.bak/
+ 
+*.pyc
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.ruff_cache/
+ 
+db.sqlite3
+db.sqlite3-journal 
+media/
+ 
+staticfiles/
+static_root/
+ 
+*.log
+logs/
+ 
+.env.* 
+!*.env.example
+!*.env.sample
+ 
+.idea/ # PyCharm
+.vscode/ # VSCode
+*.sublime-project
+*.sublime-workspace
+*.swp # Vim
+ 
+.DS_Store # macOS
+Thumbs.db # Windows
+ 
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+pytest.xml
+ 
+build/
+dist/
+*.egg-info/
+*.egg
+ 
+.ipynb_checkpoints
+ 
