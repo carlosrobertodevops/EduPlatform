@@ -15,14 +15,12 @@ RUN apt-get update \
   curl \
   && rm -rf /var/lib/apt/lists/*
 
-# AGORA é relativo ao contexto ./backend
 COPY requirements.txt /app/requirements.txt
 
 RUN python -m pip install --upgrade pip \
   && pip install -r /app/requirements.txt \
   && pip install gunicorn
 
-# Copia todo o backend (contexto já é ./backend)
 COPY . /app
 
 COPY entrypoint.sh /entrypoint.sh

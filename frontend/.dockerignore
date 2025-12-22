@@ -5,8 +5,7 @@ yarn-error.log
 pnpm-debug.log
 
 .git/
-.gitignore
-
-# NÃO ignore package*.json
-!package.json
-!package-lock.json
+.vscode/
+.idea/
+.env
+.env.*

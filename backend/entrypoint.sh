@@ -8,8 +8,8 @@ import MySQLdb
 
 MySQLdb.connect(
     host=os.getenv("DB_HOST", "db"),
-    user=os.getenv("DB_USER", "root"),
-    passwd=os.getenv("DB_PASSWORD", ""),
+    user=os.getenv("DB_USER", "grfcourses"),
+    passwd=os.getenv("DB_PASSWORD", "grfcourses"),
     db=os.getenv("DB_NAME", "grfcourses"),
     port=int(os.getenv("DB_PORT", "3306")),
 )

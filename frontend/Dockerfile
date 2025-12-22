@@ -3,7 +3,6 @@ WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
 
-# Relativo ao contexto ./frontend
 COPY package.json package-lock.json ./
 RUN npm ci
 
