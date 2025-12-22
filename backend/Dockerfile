@@ -15,17 +15,17 @@ RUN apt-get update \
   curl \
   && rm -rf /var/lib/apt/lists/*
 
-# Agora o COPY aponta para o caminho correto dentro do contexto (raiz)
-COPY backend/requirements.txt /app/requirements.txt
+# AGORA é relativo ao contexto ./backend
+COPY requirements.txt /app/requirements.txt
 
 RUN python -m pip install --upgrade pip \
   && pip install -r /app/requirements.txt \
   && pip install gunicorn
 
-# Copia o backend inteiro (não o repo todo)
-COPY backend/ /app/
+# Copia todo o backend (contexto já é ./backend)
+COPY . /app
 
-COPY backend/entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000

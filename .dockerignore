@@ -1,19 +1,27 @@
-node_modules
-.next
-.yarn
-.pnp.*
-dist
-coverage
-
+# Git
 .git
 .gitignore
 
-.env
-.env.local
-.env.*.local
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-Dockerfile
-docker-compose.yml
-
+# Node
+node_modules
+.next
 npm-debug.log
 yarn-error.log
+
+# OS / IDE
+.DS_Store
+.vscode
+.idea
+
+# Docker
+docker-compose.override.yml
+
+# NÃO IGNORAR backend nem frontend
+!backend/**
+!frontend/**

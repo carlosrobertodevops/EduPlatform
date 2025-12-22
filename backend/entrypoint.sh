@@ -2,15 +2,16 @@
 set -e
 
 echo "Waiting for MySQL..."
-until python - <<EOF
-import MySQLdb
+until python - <<'EOF'
 import os
+import MySQLdb
+
 MySQLdb.connect(
-    host=os.getenv("DB_HOST"),
-    user=os.getenv("DB_USER"),
-    passwd=os.getenv("DB_PASSWORD"),
-    db=os.getenv("DB_NAME"),
-    port=int(os.getenv("DB_PORT", 3306)),
+    host=os.getenv("DB_HOST", "db"),
+    user=os.getenv("DB_USER", "root"),
+    passwd=os.getenv("DB_PASSWORD", ""),
+    db=os.getenv("DB_NAME", "grfcourses"),
+    port=int(os.getenv("DB_PORT", "3306")),
 )
 EOF
 do

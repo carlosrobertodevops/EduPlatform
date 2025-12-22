@@ -9,7 +9,7 @@ services:
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-grfcourses}
       MYSQL_USER: ${MYSQL_USER:-grfcourses}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-grfcourses}
+      MYSQL_PASSWORD: ${MYSQL_USER:-grfcourses}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
     volumes:
       - db_data:/var/lib/mysql
@@ -24,8 +24,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: grfcourses_backend
     environment:
       DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
@@ -55,8 +55,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     container_name: grfcourses_frontend

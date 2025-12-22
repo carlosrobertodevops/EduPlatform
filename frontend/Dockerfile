@@ -3,6 +3,7 @@ WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
 
+# Relativo ao contexto ./frontend
 COPY package.json package-lock.json ./
 RUN npm ci
 
@@ -24,11 +25,11 @@ ENV NODE_ENV=production \
   PORT=3000 \
   HOSTNAME=0.0.0.0
 
-# Next.js standalone
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["npm", "run", "start"]
