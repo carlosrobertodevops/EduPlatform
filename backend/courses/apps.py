@@ -1,3 +1,4 @@
+import stripe
 from decouple import config
 from django.apps import AppConfig
 
@@ -8,14 +9,6 @@ class CoursesConfig(AppConfig):
 
     def ready(self):
         """
-        Configura Stripe apenas se STRIPE_SECRET_KEY estiver definida.
-        Não derruba o Django quando a variável não existe (dev/Docker).
+        Não derruba o Django se STRIPE_SECRET_KEY não existir (dev/Docker).
         """
-        try:
-            import stripe
-        except Exception:
-            return
-
-        stripe_key = config("STRIPE_SECRET_KEY", default="").strip()
-        if stripe_key:
-            stripe.api_key = stripe_key
+        stripe.api_key = config("STRIPE_SECRET_KEY", default="")
