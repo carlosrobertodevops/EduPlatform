@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // "use server";
 
 // import axios, { AxiosError } from "axios";
@@ -68,14 +69,15 @@
 //   }
 // };
 import axios, { AxiosError } from "axios";
+=======
+"use client";
 
-type Props = {
-  endpoint: string;
-  method?: "GET" | "POST" | "PUT" | "DELETE";
-  data?: object;
-  withAuth?: boolean;
-};
+import axios from "axios";
+>>>>>>> a0f0d90 (Ajustes)
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+<<<<<<< HEAD
 type APIError = {
   detail?: string;
   code?: string;
@@ -164,3 +166,12 @@ export const api = async <TypeResponse>({
     };
   }
 };
+=======
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+>>>>>>> a0f0d90 (Ajustes)

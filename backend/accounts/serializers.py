@@ -7,6 +7,7 @@
 #         model = User
 #         fields = ['id', 'name', 'email']
 #
+<<<<<<< HEAD
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -82,3 +83,33 @@ class SignupSerializer(serializers.ModelSerializer):
 class SignInSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+=======
+
+from django.contrib.auth.models import User
+from rest_framework import serializers
+
+
+class SignupSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=6)
+    password_confirmation = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        if data["password"] != data["password_confirmation"]:
+            raise serializers.ValidationError("Passwords do not match")
+
+        if User.objects.filter(email=data["email"]).exists():
+            raise serializers.ValidationError("Email already registered")
+
+        return data
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data["email"],
+            email=validated_data["email"],
+            password=validated_data["password"],
+            first_name=validated_data["name"],
+        )
+        return user
+>>>>>>> a0f0d90 (Ajustes)

@@ -1,43 +1,41 @@
 "use client";
 
-import { signUp } from "@/services/auth";
-import { addCourseReview, enrollInCourse, markLessonAsWatched } from "@/services/courses";
 import { useMutation } from "@tanstack/react-query";
-import { signIn } from "next-auth/react";
+import { signUp } from "@/services/auth";
+import { api } from "@/lib/api";
 
-export const useSignUp = () => {
-    return useMutation({
-        mutationFn: signUp,
-        onSuccess: async (data, variables) => {
-            if (!data.success) return;
-
-            const result = await signIn("credentials", {
-                email: variables.email,
-                password: variables.password,
-                redirect: false
-            })
-
-            if (result.error) {
-                throw new Error("Erro ao fazer login após cadastro");
-            }
-        }
-    })
+/* =========================
+   SIGN UP
+========================= */
+export function useSignUp() {
+  return useMutation({
+    mutationFn: signUp,
+  });
 }
 
-export const useAddCourseReview = () => {
-    return useMutation({
-        mutationFn: addCourseReview,
-    })
+/* =========================
+   ENROLL IN COURSE
+========================= */
+export function useEnrollInCourse() {
+  return useMutation({
+    mutationFn: async (courseId: string) => {
+      const { data } = await api.post(`/courses/${courseId}/enroll/`);
+      return data;
+    },
+  });
 }
 
-export const useEnrollInCourse = () => {
-    return useMutation({
-        mutationFn: enrollInCourse,
-    })
-}
+/* =========================
+   ADD COURSE REVIEW
+========================= */
+export function useAddCourseReview() {
+  return useMutation({
+    mutationFn: async (payload: { courseId: string; rating: number; comment: string }) => {
+      const { courseId, ...body } = payload;
 
-export const useMarkLessonAsWatched = () => {
-    return useMutation({
-        mutationFn: markLessonAsWatched
-    })
+      const { data } = await api.post(`/courses/${courseId}/reviews/`, body);
+
+      return data;
+    },
+  });
 }

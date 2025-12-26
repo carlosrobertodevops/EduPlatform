@@ -2,7 +2,7 @@
 
 import { useSignUp } from "@/lib/mutations";
 import { registerSchema, SignUpForm } from "@/schemas/auth";
-import { useRouter } from "@bprogress/next/app";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,6 +20,7 @@ export const SignUpPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const router = useRouter();
+<<<<<<< HEAD
 
   const { mutateAsync, isPending } = useSignUp();
 
@@ -48,6 +49,35 @@ export const SignUpPage = () => {
 
       router.push("/dashboard");
     } catch (error) {
+=======
+  const { mutateAsync, isPending } = useSignUp();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignUpForm>({
+    resolver: zodResolver(registerSchema),
+  });
+
+  const onSubmit = async (data: SignUpForm) => {
+    try {
+      const response = await mutateAsync(data);
+
+      if (!response.success) {
+        toast.error("Erro ao criar conta.", {
+          description: response.detail,
+        });
+        return;
+      }
+
+      toast.success("Conta criada com sucesso!", {
+        description: "Redirecionando...",
+      });
+
+      router.push("/dashboard");
+    } catch {
+>>>>>>> a0f0d90 (Ajustes)
       toast.error("Erro ao criar conta.", {
         description: "Tente novamente mais tarde.",
       });
@@ -60,6 +90,7 @@ export const SignUpPage = () => {
 
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md glass-effect">
+<<<<<<< HEAD
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Criar conta</CardTitle>
             <CardDescription className="text-center">Crie sua conta para começar a aprender</CardDescription>
@@ -135,6 +166,71 @@ export const SignUpPage = () => {
             <div className="text-center text-sm">
               Já tem conta?{" "}
               <Link href="/auth/signin" className="text-primary hover:underline">
+=======
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">Criar conta</CardTitle>
+            <CardDescription className="text-center">Crie sua conta para começar a aprender</CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div>
+                <Label>Nome completo</Label>
+                <Input {...register("name")} disabled={isPending} />
+                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+              </div>
+
+              <div>
+                <Label>Email</Label>
+                <Input {...register("email")} disabled={isPending} />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+              </div>
+
+              <div>
+                <Label>Senha</Label>
+                <div className="relative">
+                  <Input type={showPassword ? "text" : "password"} {...register("password")} disabled={isPending} />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label>Confirmar senha</Label>
+                <div className="relative">
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    {...register("confirmPassword")}
+                    disabled={isPending}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff /> : <Eye />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Criando conta..." : "Criar conta"}
+              </Button>
+            </form>
+
+            <div className="text-center text-sm mt-4">
+              Já tem conta?{" "}
+              <Link href="/auth/signin" className="text-primary">
+>>>>>>> a0f0d90 (Ajustes)
                 Faça login
               </Link>
             </div>
@@ -144,6 +240,7 @@ export const SignUpPage = () => {
     </div>
   );
 };
+<<<<<<< HEAD
 
 // "use client";
 
@@ -185,3 +282,5 @@ export const SignUpPage = () => {
 //     </form>
 //   );
 // }
+=======
+>>>>>>> a0f0d90 (Ajustes)

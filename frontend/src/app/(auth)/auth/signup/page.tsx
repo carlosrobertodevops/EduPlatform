@@ -1,5 +1,5 @@
 import { SignUpPage } from "@/components/pages/auth/signup";
 
-export default function () {
-    return <SignUpPage />;
+export default function Page() {
+  return <SignUpPage />;
 }

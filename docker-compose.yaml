@@ -83,32 +83,36 @@
 
 services:
   db:
-    image: mysql:8.4
+    image: mysql:8.0
     container_name: grfcourses_db
+<<<<<<< HEAD
     command: >
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
+=======
+    restart: unless-stopped
+>>>>>>> a0f0d90 (Ajustes)
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-grfcourses}
       MYSQL_USER: ${MYSQL_USER:-grfcourses}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-grfcourses}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
-    volumes:
-      - db_data:/var/lib/mysql
     ports:
       - "${DB_PORT:-3306}:3306"
+    volumes:
+      - grfcourses_db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
       interval: 5s
       timeout: 5s
-      retries: 30
-    restart: unless-stopped
+      retries: 20
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: grfcourses_backend
+<<<<<<< HEAD
     environment:
       DJANGO_DEBUG: ${DJANGO_DEBUG:-0}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
@@ -130,17 +134,38 @@ services:
     depends_on:
       db:
         condition: service_healthy
+=======
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      DB_ENGINE: ${DB_ENGINE:-django.db.backends.mysql}
+      DB_NAME: ${DB_NAME:-grfcourses}
+      DB_USER: ${DB_USER:-grfcourses}
+      DB_PASSWORD: ${DB_PASSWORD:-grfcourses}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT_INTERNAL: ${DB_PORT_INTERNAL:-3306}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-0}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:3000}
+>>>>>>> a0f0d90 (Ajustes)
     ports:
       - "${BACKEND_PORT:-8000}:8000"
-    restart: unless-stopped
+    volumes:
+      - grfcourses_backend_static:/app/staticfiles
+      - grfcourses_backend_media:/app/media
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     container_name: grfcourses_frontend
+<<<<<<< HEAD
     environment:
       NODE_ENV: ${NODE_ENV:-production}
 
@@ -163,9 +188,32 @@ services:
       HOSTNAME: 0.0.0.0
     depends_on:
       - backend
+=======
+    restart: unless-stopped
+    depends_on:
+      - backend
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # Browser -> backend (porta publicada no host)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # Next server -> backend (rede docker)
+      API_URL: ${API_URL:-http://backend:8000}
+
+      # Auth.js / NextAuth v5
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-please-32-chars-min}
+>>>>>>> a0f0d90 (Ajustes)
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
-    restart: unless-stopped
 
 volumes:
+<<<<<<< HEAD
   db_data:
+=======
+  grfcourses_db_data:
+  grfcourses_backend_static:
+  grfcourses_backend_media:
+>>>>>>> a0f0d90 (Ajustes)
