@@ -1,177 +1,97 @@
-<<<<<<< HEAD
-// "use server";
-
-// import axios, { AxiosError } from "axios";
-// import { auth } from "@/lib/auth";
-
-// type Props = {
-//   endpoint: string;
-//   method?: "GET" | "POST" | "PUT" | "DELETE";
-//   data?: object;
-//   withAuth?: boolean;
-// };
-
-// const getBaseUrl = () => {
-//   const base = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "";
-
-//   // Seu backend expõe /api/v1
-//   if (!base) return "";
-//   return `${base}/api/v1`;
-// };
-
-// export const api = async <TypeResponse>({
-//   endpoint,
-//   method = "GET",
-//   data,
-//   withAuth = true,
-// }: Props): Promise<API<TypeResponse>> => {
-//   const BASE_URL = getBaseUrl();
-
-//   if (!BASE_URL) {
-//     return {
-//       success: false,
-//       detail: "API base URL is not configured. Set API_URL (server) or NEXT_PUBLIC_API_URL (client).",
-//       code: "MISSING_API_URL",
-//       data: null,
-//     };
-//   }
-
-//   // auth() pode ser chamado em server actions
-//   const session = await auth().catch(() => null);
-
-//   const instance = axios.create({
-//     baseURL: BASE_URL,
-//   });
-
-//   const accessToken = (session as any)?.user?.access_token;
-
-//   if (withAuth && accessToken) {
-//     instance.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-//   }
-
-//   try {
-//     const request = await instance<API<TypeResponse>>(endpoint, {
-//       method,
-//       params: method === "GET" ? data : undefined,
-//       data: method !== "GET" ? data : undefined,
-//     });
-
-//     return request.data;
-//   } catch (error) {
-//     const e = error as AxiosError<APIError>;
-
-//     return {
-//       success: false,
-//       detail: e.response?.data.detail || "An unexpected error occurred",
-//       code: e.response?.data.code || "UNKNOWN_ERROR",
-//       data: null,
-//     };
-//   }
-// };
 import axios, { AxiosError } from "axios";
-=======
-"use client";
 
-import axios from "axios";
->>>>>>> a0f0d90 (Ajustes)
+type Props = {
+  endpoint: string;
+  method?: "GET" | "POST" | "PUT" | "DELETE";
+  data?: object;
+  withAuth?: boolean;
+};
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-<<<<<<< HEAD
 type APIError = {
   detail?: string;
   code?: string;
 };
 
-type API<T> = {
+export type API<T> = {
   success: boolean;
   detail: string;
   code?: string;
   data: T | null;
 };
 
-function getBaseUrl(): string {
-  // Server: API_URL
-  const serverBase = process.env.API_URL?.trim();
-  // Client: NEXT_PUBLIC_API_URL
-  const publicBase = process.env.NEXT_PUBLIC_API_URL?.trim();
-
-  const base = serverBase || publicBase || "";
-  if (!base) return "";
-
-  return `${base}/api/v1`;
+function normalizeBaseUrl(url: string): string {
+  const trimmed = (url || "").trim();
+  if (!trimmed) return "";
+  return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
 }
 
-async function getAccessToken(): Promise<string | null> {
-  try {
-    // Browser (client)
-    if (typeof window !== "undefined") {
-      const mod = await import("next-auth/react");
-      const session = await mod.getSession();
-      return (session as any)?.access_token ?? (session as any)?.user?.access_token ?? null;
-    }
+function getBaseUrl(): string {
+  // Server-side (SSR dentro do container): API_URL
+  const serverBase = normalizeBaseUrl(process.env.API_URL || "");
 
-    // Server
-    const mod = await import("@/lib/auth");
-    const session = await mod.auth();
-    return (session as any)?.access_token ?? (session as any)?.user?.access_token ?? null;
+  // Client-side: NEXT_PUBLIC_API_URL
+  const publicBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL || "");
+
+  const base = serverBase || publicBase;
+  if (base) return base;
+
+  // Fallbacks seguros para evitar crash em build/SSR no Docker quando env não foi injetada.
+  if (process.env.NODE_ENV === "production") return "http://backend:8000";
+  return "http://localhost:8000";
+}
+
+function getApiBaseUrl(): string {
+  return `${getBaseUrl()}/api/v1`;
+}
+
+async function getAccessTokenClient(): Promise<string | null> {
+  try {
+    const { getSession } = await import("next-auth/react");
+    const session: any = await getSession();
+    return session?.user?.access_token ?? null;
   } catch {
     return null;
   }
 }
 
-export const api = async <TypeResponse>({
-  endpoint,
-  method = "GET",
-  data,
-  withAuth = true,
-}: Props): Promise<API<TypeResponse>> => {
-  const BASE_URL = getBaseUrl();
+export async function api<T>({ endpoint, method = "GET", data, withAuth = true }: Props): Promise<API<T>> {
+  const instance = axios.create({
+    baseURL: getApiBaseUrl(),
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  });
 
-  if (!BASE_URL) {
-    return {
-      success: false,
-      detail: "API base URL is not configured. Set API_URL (server) or NEXT_PUBLIC_API_URL (client).",
-      code: "MISSING_API_URL",
-      data: null,
-    };
-  }
-
-  const instance = axios.create({ baseURL: BASE_URL });
-
-  if (withAuth) {
-    const accessToken = await getAccessToken();
-    if (accessToken) {
-      instance.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+  // Para evitar ciclos/imports problemáticos no SSR, o auth automático é feito no client.
+  if (withAuth && typeof window !== "undefined") {
+    const token = await getAccessTokenClient();
+    if (token) {
+      instance.defaults.headers.common.Authorization = `Bearer ${token}`;
     }
   }
 
   try {
-    const request = await instance.request<API<TypeResponse>>({
+    const res = await instance.request<T>({
       url: endpoint,
       method,
-      params: method === "GET" ? data : undefined,
-      data: method !== "GET" ? data : undefined,
+      data,
     });
 
-    return request.data;
-  } catch (error) {
-    const e = error as AxiosError<APIError>;
+    return {
+      success: true,
+      detail: "ok",
+      data: res.data,
+    };
+  } catch (err) {
+    const error = err as AxiosError<APIError>;
+    const detail = error.response?.data?.detail || error.message || "Unexpected error";
 
     return {
       success: false,
-      detail: e.response?.data?.detail || "An unexpected error occurred",
-      code: e.response?.data?.code || "UNKNOWN_ERROR",
+      detail,
+      code: error.response?.data?.code,
       data: null,
     };
   }
-};
-=======
-export const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
->>>>>>> a0f0d90 (Ajustes)
+}

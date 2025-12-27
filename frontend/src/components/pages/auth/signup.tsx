@@ -20,7 +20,6 @@ export const SignUpPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const router = useRouter();
-<<<<<<< HEAD
 
   const { mutateAsync, isPending } = useSignUp();
 
@@ -49,35 +48,6 @@ export const SignUpPage = () => {
 
       router.push("/dashboard");
     } catch (error) {
-=======
-  const { mutateAsync, isPending } = useSignUp();
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignUpForm>({
-    resolver: zodResolver(registerSchema),
-  });
-
-  const onSubmit = async (data: SignUpForm) => {
-    try {
-      const response = await mutateAsync(data);
-
-      if (!response.success) {
-        toast.error("Erro ao criar conta.", {
-          description: response.detail,
-        });
-        return;
-      }
-
-      toast.success("Conta criada com sucesso!", {
-        description: "Redirecionando...",
-      });
-
-      router.push("/dashboard");
-    } catch {
->>>>>>> a0f0d90 (Ajustes)
       toast.error("Erro ao criar conta.", {
         description: "Tente novamente mais tarde.",
       });
@@ -90,7 +60,6 @@ export const SignUpPage = () => {
 
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md glass-effect">
-<<<<<<< HEAD
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Criar conta</CardTitle>
             <CardDescription className="text-center">Crie sua conta para começar a aprender</CardDescription>
@@ -166,71 +135,6 @@ export const SignUpPage = () => {
             <div className="text-center text-sm">
               Já tem conta?{" "}
               <Link href="/auth/signin" className="text-primary hover:underline">
-=======
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Criar conta</CardTitle>
-            <CardDescription className="text-center">Crie sua conta para começar a aprender</CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <Label>Nome completo</Label>
-                <Input {...register("name")} disabled={isPending} />
-                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-              </div>
-
-              <div>
-                <Label>Email</Label>
-                <Input {...register("email")} disabled={isPending} />
-                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-              </div>
-
-              <div>
-                <Label>Senha</Label>
-                <div className="relative">
-                  <Input type={showPassword ? "text" : "password"} {...register("password")} disabled={isPending} />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff /> : <Eye />}
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <Label>Confirmar senha</Label>
-                <div className="relative">
-                  <Input
-                    type={showConfirmPassword ? "text" : "password"}
-                    {...register("confirmPassword")}
-                    disabled={isPending}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? <EyeOff /> : <Eye />}
-                  </Button>
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isPending}>
-                {isPending ? "Criando conta..." : "Criar conta"}
-              </Button>
-            </form>
-
-            <div className="text-center text-sm mt-4">
-              Já tem conta?{" "}
-              <Link href="/auth/signin" className="text-primary">
->>>>>>> a0f0d90 (Ajustes)
                 Faça login
               </Link>
             </div>
@@ -240,47 +144,3 @@ export const SignUpPage = () => {
     </div>
   );
 };
-<<<<<<< HEAD
-
-// "use client";
-
-// import { useState } from "react";
-// import axios from "axios";
-
-// export default function SignupPage() {
-//   const [loading, setLoading] = useState(false);
-
-//   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-//     e.preventDefault();
-//     setLoading(true);
-
-//     const form = e.currentTarget;
-//     const data = {
-//       name: form.name.value,
-//       email: form.email.value,
-//       password: form.password.value,
-//       password_confirm: form.password_confirm.value,
-//     };
-
-//     try {
-//       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/accounts/signup/`, data);
-//       alert("Conta criada com sucesso!");
-//     } catch (err: any) {
-//       alert(err?.response?.data ? JSON.stringify(err.response.data) : "Erro inesperado");
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-//   return (
-//     <form onSubmit={handleSubmit}>
-//       <input name="name" placeholder="Nome completo" />
-//       <input name="email" placeholder="Email" />
-//       <input name="password" type="password" placeholder="Senha" />
-//       <input name="password_confirm" type="password" placeholder="Confirmar senha" />
-//       <button disabled={loading}>Criar conta</button>
-//     </form>
-//   );
-// }
-=======
->>>>>>> a0f0d90 (Ajustes)

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSignIn } from "@/lib/mutations";
 import { loginSchema, SignInForm } from "@/schemas/auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,13 +14,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 
 export const SignInPage = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
+
+  const { mutateAsync, isPending } = useSignIn();
 
   const {
     register,
@@ -30,30 +31,25 @@ export const SignInPage = () => {
   });
 
   const onSubmit = async (data: SignInForm) => {
-    setIsLoading(true);
     try {
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+      const response = await mutateAsync(data);
 
-      if (result?.error) {
-        toast.error("Erro ao fazer login", { description: "Email ou senha incorretos" });
+      if (!response.success) {
+        toast.error("Erro ao entrar.", {
+          description: response.detail,
+        });
         return;
       }
 
-      toast.success("Login realizado com sucesso!", {
+      toast.success("Login efetuado com sucesso!", {
         description: "Redirecionando para o dashboard...",
-        duration: 2000,
       });
+
       router.push("/dashboard");
-    } catch {
-      toast.error("Erro ao entrar na conta.", {
+    } catch (error) {
+      toast.error("Erro ao entrar.", {
         description: "Tente novamente mais tarde.",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -65,7 +61,7 @@ export const SignInPage = () => {
         <Card className="w-full max-w-md glass-effect">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Entrar</CardTitle>
-            <CardDescription className="text-center">Entre na sua conta para continuar</CardDescription>
+            <CardDescription className="text-center">Faça login para continuar aprendendo</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -75,7 +71,7 @@ export const SignInPage = () => {
                   id="email"
                   type="email"
                   placeholder="seu@email.com"
-                  disabled={isLoading}
+                  disabled={isPending}
                   {...register("email")}
                 />
                 {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
@@ -88,7 +84,7 @@ export const SignInPage = () => {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Sua senha"
-                    disabled={isLoading}
+                    disabled={isPending}
                     {...register("password")}
                   />
                   <Button
@@ -104,16 +100,24 @@ export const SignInPage = () => {
                 {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
               </div>
 
-              <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
-                {isLoading ? "Entrando..." : "Entrar"}
+              <Button type="submit" className="w-full cursor-pointer" disabled={isPending}>
+                {isPending ? "Entrando..." : "Entrar"}
               </Button>
             </form>
 
-            <div className="text-center text-sm">
-              Não tem uma conta?{" "}
-              <Link href="/auth/signup" className="text-primary hover:underline">
-                Cadastre-se
-              </Link>
+            <div className="text-center text-sm space-y-2">
+              <div>
+                Não tem conta?{" "}
+                <Link href="/auth/signup" className="text-primary hover:underline">
+                  Criar conta
+                </Link>
+              </div>
+
+              <div>
+                <Link href="/auth/forgot-password" className="text-primary hover:underline">
+                  Esqueci minha senha
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>

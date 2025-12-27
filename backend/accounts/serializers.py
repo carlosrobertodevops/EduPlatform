@@ -1,15 +1,4 @@
-# from rest_framework import serializers
-
-# from accounts.models import User
-
-# class UserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = ['id', 'name', 'email']
-#
-<<<<<<< HEAD
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 User = get_user_model()
@@ -18,98 +7,71 @@ User = get_user_model()
 class SignupSerializer(serializers.ModelSerializer):
     """
     Serializer para criação de usuário.
-    Aceita:
-      - name (nome completo) [opcional]
+
+    Contrato da API (frontend/clients):
+      - name (opcional)
       - email
       - password
-      - password_confirm
+      - password_confirmation
+
+    Compatibilidade:
+      - também aceita password_confirm (legado), caso algum client ainda envie assim.
     """
 
     name = serializers.CharField(required=False, allow_blank=True)
-    password = serializers.CharField(write_only=True, required=True)
-    password_confirm = serializers.CharField(write_only=True, required=True)
+
+    # Campo principal (contrato atual)
+    password_confirmation = serializers.CharField(write_only=True, required=False)
+
+    # Campo legado (alguma parte do projeto antigo pode ter usado isso)
+    password_confirm = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ["id", "name", "email", "password", "password_confirm"]
-
-    def validate_email(self, value):
-        email = (value or "").strip().lower()
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError("Este email já está cadastrado.")
-        return email
+        fields = [
+            "name",
+            "email",
+            "password",
+            "password_confirmation",
+            "password_confirm",
+        ]
+        extra_kwargs = {
+            "password": {"write_only": True},
+        }
 
     def validate(self, attrs):
         password = attrs.get("password")
-        password_confirm = attrs.get("password_confirm")
 
-        if password != password_confirm:
+        # Prioriza o contrato atual; cai para legado se necessário
+        confirmation = attrs.get("password_confirmation") or attrs.get(
+            "password_confirm"
+        )
+
+        if not password or not confirmation:
             raise serializers.ValidationError(
-                {"password_confirm": "As senhas não conferem."}
+                {"password_confirmation": "Campo obrigatório."}
             )
 
-        # valida password do Django
-        validate_password(password)
+        if password != confirmation:
+            raise serializers.ValidationError(
+                {"password_confirmation": "As senhas não coincidem."}
+            )
+
         return attrs
 
     def create(self, validated_data):
-        name = (validated_data.get("name") or "").strip()
-        email = validated_data["email"].strip().lower()
-        password = validated_data["password"]
-
-        # remove campos extras
+        # Remove campos auxiliares antes de criar o usuário
+        validated_data.pop("password_confirmation", None)
         validated_data.pop("password_confirm", None)
-        validated_data.pop("password", None)
 
-        # tenta mapear nome para campos comuns (first_name/last_name) se existirem
-        user = User(email=email)
+        password = validated_data.pop("password")
+        name = validated_data.pop("name", "")
 
-        if hasattr(user, "first_name") or hasattr(user, "last_name"):
-            # split simples do nome completo
-            parts = name.split()
-            if parts:
-                if hasattr(user, "first_name"):
-                    user.first_name = parts[0]
-                if hasattr(user, "last_name"):
-                    user.last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
-        elif hasattr(user, "name"):
-            user.name = name
-
+        user = User(
+            name=name,
+            email=validated_data.get("email"),
+        )
         user.set_password(password)
         user.save()
+
         return user
-
-
-class SignInSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-=======
-
-from django.contrib.auth.models import User
-from rest_framework import serializers
-
-
-class SignupSerializer(serializers.Serializer):
-    name = serializers.CharField(max_length=150)
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True, min_length=6)
-    password_confirmation = serializers.CharField(write_only=True)
-
-    def validate(self, data):
-        if data["password"] != data["password_confirmation"]:
-            raise serializers.ValidationError("Passwords do not match")
-
-        if User.objects.filter(email=data["email"]).exists():
-            raise serializers.ValidationError("Email already registered")
-
-        return data
-
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            username=validated_data["email"],
-            email=validated_data["email"],
-            password=validated_data["password"],
-            first_name=validated_data["name"],
-        )
-        return user
->>>>>>> a0f0d90 (Ajustes)
