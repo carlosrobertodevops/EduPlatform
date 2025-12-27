@@ -1,152 +1,124 @@
-// import NextAuth from "next-auth";
-// import Credentials from "next-auth/providers/credentials";
-
-// import { signIn as signInAPI } from "@/services/auth";
-
-// export const { handlers, signIn, signOut, auth } = NextAuth({
-//   trustHost: true, // <- resolve UntrustedHost no Docker/localhost
-
-//   providers: [
-//     Credentials({
-//       name: "credentials",
-//       credentials: {
-//         email: { label: "Email", type: "email" },
-//         password: { label: "Password", type: "password" },
-//       },
-//       async authorize(credentials) {
-//         if (!credentials?.email || !credentials?.password) return null;
-
-//         const response = await signInAPI({
-//           email: credentials.email as string,
-//           password: credentials.password as string,
-//         });
-
-//         // response é do seu wrapper API<TypeResponse>
-//         if (!response?.success || !response.data) return null;
-
-//         const access_token = response.data.access_token;
-//         if (!access_token) return null;
-
-//         return {
-//           id: response.data.user.id,
-//           name: response.data.user.name,
-//           email: response.data.user.email,
-//           access_token,
-//         };
-//       },
-//     }),
-//   ],
-
-//   session: {
-//     strategy: "jwt",
-//   },
-
-//   callbacks: {
-//     async jwt({ token, user }) {
-//       if (user) {
-//         token.id = (user as any).id;
-//         token.access_token = (user as any).access_token ?? null;
-//       }
-//       return token;
-//     },
-
-//     async session({ session, token }) {
-//       // garante estrutura
-//       if (!session.user) session.user = {} as any;
-
-//       (session.user as any).id = (token as any).id ?? null;
-//       (session.user as any).access_token = (token as any).access_token ?? null;
-
-//       return session;
-//     },
-//   },
-// });
-
+// frontend/src/lib/auth.ts
 import NextAuth from "next-auth";
-
-import { signIn as signInAPI } from "@/services/auth";
 import Credentials from "next-auth/providers/credentials";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-<<<<<<< HEAD
-  trustHost: true,
+/**
+ * Base URL do Backend (server-side).
+ * - Em Docker: use o nome do serviço "backend"
+ * - Fora do Docker: pode usar http://localhost:8000
+ *
+ * Ordem de prioridade:
+ * 1) API_URL (server)
+ * 2) NEXT_PUBLIC_API_URL (fallback)
+ * 3) http://backend:8000/api/v1 (padrão para docker compose)
+ */
+const API_BASE_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://backend:8000/api/v1";
 
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-=======
-  // Necessário para Auth.js em produção (e recomendado em dev)
-  // Defina AUTH_SECRET no docker-compose/.env
-  secret: process.env.AUTH_SECRET,
+/**
+ * Secret do Auth.js/NextAuth.
+ * Preferir AUTH_SECRET (Auth.js) e manter compatibilidade com NEXTAUTH_SECRET.
+ */
+const AUTH_SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
 
-  // Evita UntrustedHost quando estiver atrás de proxy/container
-  trustHost: process.env.AUTH_TRUST_HOST === "true",
->>>>>>> a0f0d90 (Ajustes)
+/**
+ * Em ambientes com proxy/container é comum precisar “trustHost”.
+ * - Se quiser forçar: AUTH_TRUST_HOST=true
+ * - Caso contrário: false
+ */
+const TRUST_HOST = process.env.AUTH_TRUST_HOST === "true";
 
-  providers: [
-    Credentials({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-
-        const response = await signInAPI({
-          email: credentials.email as string,
-          password: credentials.password as string,
-        });
-
-<<<<<<< HEAD
-        if (!response?.success || !response.data) return null;
-
-        const access_token = response.data.access_token;
-        if (!access_token) return null;
-=======
-        if (!response.success) return null;
->>>>>>> a0f0d90 (Ajustes)
-
-        return {
-          id: response.data.user.id,
-          name: response.data.user.name,
-          email: response.data.user.email,
-          access_token: response.data.access,
+type BackendSignInResponse =
+  | {
+      success: true;
+      data: {
+        access_token: string;
+        user: {
+          id: string | number;
+          name?: string | null;
+          email?: string | null;
         };
-      },
-    }),
-  ],
-<<<<<<< HEAD
+      };
+      detail?: string;
+    }
+  | {
+      success: false;
+      data?: any;
+      detail?: string;
+    };
+
+async function signInWithBackend(email: string, password: string) {
+  const url = `${API_BASE_URL.replace(/\/$/, "")}/accounts/signin/`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // Sem cache para auth
+    cache: "no-store",
+    body: JSON.stringify({ email, password }),
+  });
+
+  // Backend pode retornar 400/401 com JSON explicando
+  const json = (await res.json().catch(() => null)) as BackendSignInResponse | null;
+
+  if (!res.ok || !json || json.success !== true) {
+    return null;
+  }
+
+  const accessToken = json.data?.access_token;
+  const user = json.data?.user;
+
+  if (!accessToken || !user?.id) return null;
+
+  return {
+    id: String(user.id),
+    name: user.name ?? undefined,
+    email: user.email ?? email,
+    access_token: accessToken,
+  };
+}
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Auth.js
+  secret: AUTH_SECRET || undefined,
+  trustHost: TRUST_HOST,
 
   session: { strategy: "jwt" },
 
+  providers: [
+    Credentials({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Senha", type: "password" },
+      },
+      async authorize(credentials) {
+        const email = (credentials?.email as string | undefined)?.trim();
+        const password = credentials?.password as string | undefined;
+
+        if (!email || !password) return null;
+
+        const user = await signInWithBackend(email, password);
+        return user;
+      },
+    }),
+  ],
+
   callbacks: {
     async jwt({ token, user }) {
+      // Quando loga, o "user" vem do authorize()
       if (user) {
-        (token as any).access_token = (user as any).access_token ?? null;
         (token as any).id = (user as any).id ?? null;
-=======
-  session: {
-    strategy: "jwt",
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id as number;
-        token.access_token = (user as any).access_token;
->>>>>>> a0f0d90 (Ajustes)
+        (token as any).access_token = (user as any).access_token ?? null;
+        token.name = (user as any).name ?? token.name;
+        token.email = (user as any).email ?? token.email;
       }
       return token;
     },
+
     async session({ session, token }) {
-<<<<<<< HEAD
+      (session as any).user = session.user || {};
+      (session as any).user.id = (token as any).id ?? null;
       (session as any).access_token = (token as any).access_token ?? null;
-      (session.user as any).id = (token as any).id ?? null;
-=======
-      if (token) {
-        // @ts-expect-error - Augmentamos campos no objeto session.user
-        session.user.id = token.id;
-        (session.user as any).access_token = token.access_token as string;
-      }
->>>>>>> a0f0d90 (Ajustes)
       return session;
     },
   },

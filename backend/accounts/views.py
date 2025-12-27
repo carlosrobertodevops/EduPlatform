@@ -1,177 +1,91 @@
-<<<<<<< HEAD
-# from django.contrib.auth import get_user_model
-# from rest_framework import status
-# from rest_framework.response import Response
-# from rest_framework.views import APIView
-# from rest_framework_simplejwt.tokens import RefreshToken
-
-# from .serializers import SignupSerializer
-
-# User = get_user_model()
-
-
-# class SignupView(APIView):
-#     permission_classes = []
-
-#     def post(self, request):
-#         serializer = SignupSerializer(data=request.data)
-
-#         if not serializer.is_valid():
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#         user = serializer.save()
-
-#         refresh = RefreshToken.for_user(user)
-
-#         return Response(
-#             {
-#                 "access_token": str(refresh.access_token),
-#                 "refresh_token": str(refresh),
-#                 "user": {
-#                     "id": user.id,
-#                     "email": user.email,
-#                     "name": user.get_full_name(),
-#                 },
-#             },
-#             status=status.HTTP_201_CREATED,
-#         )
-
-
 from django.contrib.auth import authenticate, get_user_model
-from rest_framework import status
+from django.db import IntegrityError, transaction
+from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import SignInSerializer, SignupSerializer
-
 User = get_user_model()
 
-=======
-# from rest_framework.views import APIView
-# from rest_framework.permissions import AllowAny
-# from rest_framework.request import Request
-# from rest_framework.response import Response
-# from rest_framework.exceptions import AuthenticationFailed
 
-# from rest_framework_simplejwt.tokens import RefreshToken
+class SignUpSerializer(serializers.Serializer):
+    """
+    Cadastro simples: email + password.
+    Opcional: first_name, last_name.
+    """
 
-# from accounts.models import User
-# from accounts.serializers import UserSerializer
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=6)
+    first_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
 
-# from core.utils.exceptions import ValidationError
-# from core.utils.formatters import format_serializer_error
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
 
-# from django.contrib.auth.hashers import make_password, check_password
+    def create(self, validated_data):
+        email = validated_data["email"]
+        password = validated_data["password"]
+        first_name = validated_data.get("first_name", "")
+        last_name = validated_data.get("last_name", "")
 
-# class SignInView(APIView):
-#     permission_classes = [AllowAny]
+        try:
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=email if hasattr(User, "username") else None,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                )
+                user.set_password(password)
+                user.save(update_fields=["password"])
+        except IntegrityError as exc:
+            # Ex.: email único já existe
+            raise serializers.ValidationError(
+                {"email": ["Este e-mail já está em uso."]}
+            ) from exc
 
-#     def post(self, request: Request):
-#         email = request.data.get('email', '')
-#         password = request.data.get('password', '')
+        return user
 
-#         if not email or not password:
-#             raise ValidationError
 
-#         user = User.objects.filter(email=email).first()
+class SignInSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
 
-#         if not user:
-#             raise AuthenticationFailed("Email e/ou senha inválido(s)")
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
 
-#         if not check_password(password, user.password):
-#             raise AuthenticationFailed("Email e/ou senha inválido(s)")
 
-#         user_data = UserSerializer(user).data
-#         access_token = RefreshToken.for_user(user).access_token
+def _jwt_for_user(user: User) -> dict:
+    refresh = RefreshToken.for_user(user)
+    return {
+        "refresh": str(refresh),
+        "access": str(refresh.access_token),
+    }
 
-#         return Response({
-#             "user": user_data,
-#             "access_token": str(access_token)
-#         })
-
-# class SignUpView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def post(self, request: Request):
-#         data = {
-#             "name": request.data.get('name'),
-#             "email": request.data.get('email'),
-#             "password": request.data.get('password')
-#         }
-
-#         serializer = UserSerializer(data=data)
-
-#         if not serializer.is_valid():
-#             raise ValidationError(format_serializer_error(serializer.errors))
-
-#         user = User.objects.create(
-#             name=data.get('name'),
-#             email=data.get('email'),
-#             password=make_password(data.get('password'))
-#         )
-
-#         access_token = RefreshToken.for_user(user).access_token
-
-#         return Response({
-#             "user": UserSerializer(user).data,
-#             "access_token": str(access_token)
-#         })
-
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-from .serializers import SignupSerializer
-
->>>>>>> a0f0d90 (Ajustes)
 
 class SignUpView(APIView):
-    permission_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = SignupSerializer(data=request.data)
-
+        serializer = SignUpSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
-<<<<<<< HEAD
-                {
-                    "success": False,
-                    "detail": "Validation error",
-                    "code": "VALIDATION_ERROR",
-                    "data": serializer.errors,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
+                {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         user = serializer.save()
-
-        refresh = RefreshToken.for_user(user)
-
-        # tenta extrair um "name" legível
-        name = ""
-        if hasattr(user, "get_full_name"):
-            name = user.get_full_name() or ""
-        if not name and hasattr(user, "name"):
-            name = getattr(user, "name") or ""
-        if not name:
-            name = user.email
+        tokens = _jwt_for_user(user)
 
         return Response(
             {
-                "success": True,
-                "detail": "User created",
-                "code": "USER_CREATED",
-                "data": {
-                    "access_token": str(refresh.access_token),
-                    "refresh_token": str(refresh),
-                    "user": {
-                        "id": user.id,
-                        "email": user.email,
-                        "name": name,
-                    },
+                "user": {
+                    "id": user.id,
+                    "email": getattr(user, "email", None),
+                    "first_name": getattr(user, "first_name", ""),
+                    "last_name": getattr(user, "last_name", ""),
                 },
+                "tokens": tokens,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -182,70 +96,49 @@ class SignInView(APIView):
 
     def post(self, request):
         serializer = SignInSerializer(data=request.data)
-
         if not serializer.is_valid():
             return Response(
-                {
-                    "success": False,
-                    "detail": "Validation error",
-                    "code": "VALIDATION_ERROR",
-                    "data": serializer.errors,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        email = serializer.validated_data["email"].strip().lower()
-        password = serializer.validated_data["password"]
-
-        user = authenticate(request, username=email, password=password)
-
-        # se seu AUTH_USER_MODEL usa email como USERNAME_FIELD, isso funciona.
-        # se não usar, você precisará ajustar a autenticação no backend.
-        if not user:
-            return Response(
-                {
-                    "success": False,
-                    "detail": "Credenciais inválidas",
-                    "code": "INVALID_CREDENTIALS",
-                    "data": None,
-                },
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        refresh = RefreshToken.for_user(user)
-
-        name = ""
-        if hasattr(user, "get_full_name"):
-            name = user.get_full_name() or ""
-        if not name and hasattr(user, "name"):
-            name = getattr(user, "name") or ""
-        if not name:
-            name = user.email
-
-        return Response(
-            {
-                "success": True,
-                "detail": "Authenticated",
-                "code": "AUTHENTICATED",
-                "data": {
-                    "access_token": str(refresh.access_token),
-                    "refresh_token": str(refresh),
-                    "user": {
-                        "id": user.id,
-                        "email": user.email,
-                        "name": name,
-                    },
-                },
-            },
-            status=status.HTTP_200_OK,
-        )
-=======
                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer.save()
+        email = serializer.validated_data["email"]
+        password = serializer.validated_data["password"]
+
+        # Se o seu User usa email como username, authenticate funciona com username=email.
+        # Caso contrário, tentamos pelo email e depois autenticamos com username.
+        user = authenticate(request, username=email, password=password)
+
+        if (
+            user is None
+            and hasattr(User, "objects")
+            and hasattr(User, "USERNAME_FIELD")
+        ):
+            # fallback: achar usuário pelo email e autenticar pelo USERNAME_FIELD
+            try:
+                u = User.objects.get(email=email)
+                user = authenticate(
+                    request, username=getattr(u, User.USERNAME_FIELD), password=password
+                )
+            except User.DoesNotExist:
+                user = None
+
+        if user is None:
+            return Response(
+                {"detail": "Credenciais inválidas."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        tokens = _jwt_for_user(user)
 
         return Response(
-            {"message": "User created successfully"}, status=status.HTTP_201_CREATED
+            {
+                "user": {
+                    "id": user.id,
+                    "email": getattr(user, "email", None),
+                    "first_name": getattr(user, "first_name", ""),
+                    "last_name": getattr(user, "last_name", ""),
+                },
+                "tokens": tokens,
+            },
+            status=status.HTTP_200_OK,
         )
->>>>>>> a0f0d90 (Ajustes)
