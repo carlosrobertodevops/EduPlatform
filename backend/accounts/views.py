@@ -64,28 +64,82 @@ def _jwt_for_user(user: User) -> dict:
     }
 
 
+# class SignUpView(APIView):
+#     permission_classes = [AllowAny]
+
+#     def post(self, request):
+#         serializer = SignUpSerializer(data=request.data)
+#         if not serializer.is_valid():
+#             return Response(
+#                 {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         user = serializer.save()
+#         tokens = _jwt_for_user(user)
+
+#         return Response(
+#             {
+#                 "user": {
+#                     "id": user.id,
+#                     "email": getattr(user, "email", None),
+#                     "first_name": getattr(user, "first_name", ""),
+#                     "last_name": getattr(user, "last_name", ""),
+#                 },
+#                 "tokens": tokens,
+#             },
+#             status=status.HTTP_201_CREATED,
+#         )
+
+
 class SignUpView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = SignUpSerializer(data=request.data)
-        if not serializer.is_valid():
+        name = request.data.get("name")
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        # compatibilidade com frontend
+        password_confirm = request.data.get("password_confirm") or request.data.get(
+            "confirmPassword"
+        )
+
+        if not all([name, email, password, password_confirm]):
             return Response(
-                {"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Todos os campos são obrigatórios"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user = serializer.save()
-        tokens = _jwt_for_user(user)
+        if password != password_confirm:
+            return Response(
+                {"detail": "As senhas não conferem"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {"detail": "E-mail já cadastrado"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = User.objects.create(
+            email=email,
+            username=email,
+            first_name=name,
+            password=make_password(password),
+        )
+
+        refresh = RefreshToken.for_user(user)
 
         return Response(
             {
+                "access_token": str(refresh.access_token),
+                "refresh_token": str(refresh),
                 "user": {
                     "id": user.id,
-                    "email": getattr(user, "email", None),
-                    "first_name": getattr(user, "first_name", ""),
-                    "last_name": getattr(user, "last_name", ""),
+                    "email": user.email,
+                    "name": user.first_name,
                 },
-                "tokens": tokens,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -142,3 +196,68 @@ class SignInView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+# from django.contrib.auth import get_user_model
+# from django.contrib.auth.hashers import make_password
+# from rest_framework import status
+# from rest_framework.permissions import AllowAny
+# from rest_framework.response import Response
+# from rest_framework.views import APIView
+# from rest_framework_simplejwt.tokens import RefreshToken
+
+# User = get_user_model()
+
+
+# class SignUpView(APIView):
+#     permission_classes = [AllowAny]
+
+#     def post(self, request):
+#         name = request.data.get("name")
+#         email = request.data.get("email")
+#         password = request.data.get("password")
+
+#         # compatibilidade com frontend
+#         password_confirm = request.data.get("password_confirm") or request.data.get(
+#             "confirmPassword"
+#         )
+
+#         if not all([name, email, password, password_confirm]):
+#             return Response(
+#                 {"detail": "Todos os campos são obrigatórios"},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         if password != password_confirm:
+#             return Response(
+#                 {"detail": "As senhas não conferem"},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         if User.objects.filter(email=email).exists():
+#             return Response(
+#                 {"detail": "E-mail já cadastrado"},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         user = User.objects.create(
+#             email=email,
+#             username=email,
+#             first_name=name,
+#             password=make_password(password),
+#         )
+
+#         refresh = RefreshToken.for_user(user)
+
+#         return Response(
+#             {
+#                 "access_token": str(refresh.access_token),
+#                 "refresh_token": str(refresh),
+#                 "user": {
+#                     "id": user.id,
+#                     "email": user.email,
+#                     "name": user.first_name,
+#                 },
+#             },
+#             status=status.HTTP_201_CREATED,
+#         )
