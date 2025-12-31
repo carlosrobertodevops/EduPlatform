@@ -17,7 +17,7 @@ export async function signUp(payload: SignUpPayload): Promise<SignUpResponse> {
     // No frontend coletamos `name` (nome completo) e `confirmPassword`.
     // No backend, o endpoint de signup aceita: email, password, first_name, last_name.
     // Como a confirmação de senha já é validada no frontend, não enviamos `confirmPassword`.
-    const { name, email, password } = payload;
+    const { name, email, password, confirmPassword } = payload;
 
     const parts = (name || "").trim().split(/\s+/).filter(Boolean);
     const firstName = parts.shift() || "";
@@ -26,6 +26,7 @@ export async function signUp(payload: SignUpPayload): Promise<SignUpResponse> {
     const body = {
       email,
       password,
+      confirmPassword,
       first_name: firstName,
       last_name: lastName,
     };
