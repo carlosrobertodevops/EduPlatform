@@ -1,118 +1,122 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import SignupSerializer
 
+User = get_user_model()
+
+
+def _response(
+    success: bool, detail: str = "", data=None, http_status=status.HTTP_200_OK
+):
+    return Response(
+        {
+            "success": success,
+            "data": data or {},
+            "detail": detail,
+        },
+        status=http_status,
+    )
+
 
 class SignUpView(APIView):
+    """
+    POST /api/v1/accounts/signup/
+
+    Espera o contrato do SignupSerializer (NÃO alterar):
+      - name
+      - email
+      - password
+      - password_confirmation (ou password_confirm legado)
+    """
+
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # request.data pode ser QueryDict (imutável). Copiamos para editar.
-        data = request.data.copy()
-
-        # ---------
-        # Normalizações para compatibilidade com o Frontend/Postman
-        # ---------
-
-        # 1) Frontend envia confirmPassword -> serializer espera password_confirmation (ou password_confirm)
-        if (
-            "confirmPassword" in data
-            and "password_confirmation" not in data
-            and "password_confirm" not in data
-        ):
-            data["password_confirmation"] = data.get("confirmPassword")
-
-        # Compat: alguns clients podem enviar passwordConfirmation
-        if (
-            "passwordConfirmation" in data
-            and "password_confirmation" not in data
-            and "password_confirm" not in data
-        ):
-            data["password_confirmation"] = data.get("passwordConfirmation")
-
-        # 2) Postman/legado pode enviar first_name + last_name -> serializer usa name
-        if "name" not in data or not str(data.get("name", "")).strip():
-            first_name = str(data.get("first_name", "")).strip()
-            last_name = str(data.get("last_name", "")).strip()
-            full_name = (first_name + " " + last_name).strip()
-            if full_name:
-                data["name"] = full_name
-
-        # Compat: caso alguém envie nome_completo/full_name
-        if "name" not in data or not str(data.get("name", "")).strip():
-            if "nome_completo" in data and str(data.get("nome_completo", "")).strip():
-                data["name"] = data.get("nome_completo")
-            elif "full_name" in data and str(data.get("full_name", "")).strip():
-                data["name"] = data.get("full_name")
-
-        serializer = SignupSerializer(data=data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response(
-                {
-                    "success": True,
-                    "data": {
-                        "id": user.id,
-                        "email": user.email,
-                        "name": getattr(user, "name", ""),
-                    },
-                    "detail": "Usuário criado com sucesso.",
-                },
-                status=status.HTTP_201_CREATED,
+        # Garantia para não estourar o model (name não pode ser vazio)
+        name = (request.data.get("name") or "").strip()
+        if not name:
+            return _response(
+                success=False,
+                detail="Todos os campos são obrigatórios",
+                data={"name": "Campo obrigatório."},
+                http_status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response(
-            {
-                "success": False,
-                "data": serializer.errors,
-                "detail": "Erro de validação.",
+        serializer = SignupSerializer(data=request.data)
+        if not serializer.is_valid():
+            # Mantém resposta no formato que seu frontend já espera
+            return _response(
+                success=False,
+                detail="Dados inválidos",
+                data=serializer.errors,
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = serializer.save()
+
+        return _response(
+            success=True,
+            detail="Conta criada com sucesso",
+            data={
+                "user": {
+                    "id": user.id,
+                    "name": getattr(user, "name", ""),
+                    "email": user.email,
+                }
             },
-            status=status.HTTP_400_BAD_REQUEST,
+            http_status=status.HTTP_201_CREATED,
         )
 
 
 class SignInView(APIView):
+    """
+    POST /api/v1/accounts/signin/
+    Body: { "email": "...", "password": "..." }
+
+    Retorna access/refresh (SimpleJWT).
+    """
+
     permission_classes = [AllowAny]
 
     def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
+        email = (request.data.get("email") or "").strip().lower()
+        password = request.data.get("password") or ""
 
         if not email or not password:
-            return Response(
-                {
-                    "success": False,
-                    "data": {},
-                    "detail": "Email e senha são obrigatórios.",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
+            return _response(
+                success=False,
+                detail="Todos os campos são obrigatórios",
+                data={"email": "Campo obrigatório.", "password": "Campo obrigatório."},
+                http_status=status.HTTP_400_BAD_REQUEST,
             )
 
         user = authenticate(request, username=email, password=password)
-
-        if not user:
-            return Response(
-                {
-                    "success": False,
-                    "data": {},
-                    "detail": "Credenciais inválidas.",
-                },
-                status=status.HTTP_401_UNAUTHORIZED,
+        if user is None:
+            return _response(
+                success=False,
+                detail="Credenciais inválidas",
+                data={},
+                http_status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        return Response(
-            {
-                "success": True,
-                "data": {
+        refresh = RefreshToken.for_user(user)
+
+        return _response(
+            success=True,
+            detail="Login realizado com sucesso",
+            data={
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": {
                     "id": user.id,
-                    "email": user.email,
                     "name": getattr(user, "name", ""),
+                    "email": user.email,
                 },
-                "detail": "Login realizado com sucesso.",
             },
-            status=status.HTTP_200_OK,
+            http_status=status.HTTP_200_OK,
         )

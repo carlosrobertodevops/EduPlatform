@@ -1,48 +1,37 @@
-import { api } from "@/lib/api";
+import api from "@/lib/api";
 
-export interface SignUpPayload {
+export type SignUpInput = {
   name: string;
   email: string;
   password: string;
+  // o form usa `confirmPassword`
   confirmPassword: string;
+};
+
+export type SignInInput = {
+  email: string;
+  password: string;
+};
+
+export async function signUp(payload: SignUpInput) {
+  const res = await api.post("/api/v1/accounts/signup/", {
+    name: payload.name,
+    email: payload.email,
+    password: payload.password,
+    // contrato novo (prioritário)
+    password_confirmation: payload.confirmPassword,
+    // compat legado (aceito pelo serializer)
+    password_confirm: payload.confirmPassword,
+  });
+
+  return res.data;
 }
 
-export interface SignUpResponse {
-  success: boolean;
-  detail?: string;
-}
+export async function signIn(payload: SignInInput) {
+  const res = await api.post("/api/v1/accounts/signin/", {
+    email: payload.email,
+    password: payload.password,
+  });
 
-export async function signUp(payload: SignUpPayload): Promise<SignUpResponse> {
-  try {
-    // No frontend coletamos `name` (nome completo) e `confirmPassword`.
-    // No backend, o endpoint de signup aceita: email, password, first_name, last_name.
-    // Como a confirmação de senha já é validada no frontend, não enviamos `confirmPassword`.
-    const { name, email, password, confirmPassword } = payload;
-
-    const parts = (name || "").trim().split(/\s+/).filter(Boolean);
-    const firstName = parts.shift() || "";
-    const lastName = parts.join(" ");
-
-    const body = {
-      email,
-      password,
-      confirmPassword,
-      first_name: firstName,
-      last_name: lastName,
-    };
-
-    const { data } = await api.post("/accounts/signup/", body);
-
-    return data;
-  } catch (error: any) {
-    return {
-      success: false,
-      // DRF pode devolver `detail` (string) ou um objeto com erros por campo.
-      detail:
-        error?.response?.data?.detail ||
-        (typeof error?.response?.data === "object"
-          ? JSON.stringify(error?.response?.data)
-          : "Erro inesperado ao criar conta."),
-    };
-  }
+  return res.data;
 }

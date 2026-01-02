@@ -1,11 +1,11 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { signUp } from "@/services/auth";
-import { api } from "@/lib/api";
+import api from "@/lib/api";
+import { signIn, signUp } from "@/services/auth";
 
 /* =========================
-   SIGN UP
+   AUTH
 ========================= */
 export function useSignUp() {
   return useMutation({
@@ -13,29 +13,32 @@ export function useSignUp() {
   });
 }
 
-/* =========================
-   ENROLL IN COURSE
-========================= */
-export function useEnrollInCourse() {
+export function useSignIn() {
   return useMutation({
-    mutationFn: async (courseId: string) => {
-      const { data } = await api.post(`/courses/${courseId}/enroll/`);
-      return data;
-    },
+    mutationFn: signIn,
   });
 }
 
 /* =========================
-   ADD COURSE REVIEW
+   COURSES / REVIEWS
 ========================= */
-export function useAddCourseReview() {
+export function useEnrollCourse() {
   return useMutation({
-    mutationFn: async (payload: { courseId: string; rating: number; comment: string }) => {
-      const { courseId, ...body } = payload;
+    mutationFn: async (courseId: string) => {
+      const res = await api.post(`/api/v1/courses/${courseId}/enroll/`);
+      return res.data;
+    },
+  });
+}
 
-      const { data } = await api.post(`/courses/${courseId}/reviews/`, body);
-
-      return data;
+export function useSubmitReview() {
+  return useMutation({
+    mutationFn: async ({ courseId, rating, comment }: { courseId: string; rating: number; comment: string }) => {
+      const res = await api.post(`/api/v1/courses/${courseId}/reviews/`, {
+        rating,
+        comment,
+      });
+      return res.data;
     },
   });
 }
