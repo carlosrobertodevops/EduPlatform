@@ -3,26 +3,15 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# =========================
-# Core
-# =========================
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
 
-# Resolve ALLOWED_HOSTS (dev-friendly)
-raw_hosts = os.getenv(
-    "DJANGO_ALLOWED_HOSTS",
-    "*",
-).strip()
-
+raw_hosts = os.getenv("DJANGO_ALLOWED_HOSTS", "*").strip()
 if raw_hosts == "*" or raw_hosts == "":
     ALLOWED_HOSTS = ["*"]
 else:
     ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
 
-# =========================
-# Apps
-# =========================
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -30,17 +19,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Third-party
     "corsheaders",
     "rest_framework",
-    # Local apps (ajuste se seus apps tiverem nomes diferentes)
     "accounts",
     "courses",
 ]
 
-# =========================
-# Middleware
-# =========================
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -52,29 +36,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "config.urls"
+ROOT_URLCONF = "core.urls"
+WSGI_APPLICATION = "core.wsgi.application"
 
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    }
-]
-
-WSGI_APPLICATION = "config.wsgi.application"
-
-# =========================
-# Database (SQLite default)
-# =========================
 DATABASES = {
     "default": {
         "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
@@ -82,9 +46,6 @@ DATABASES = {
     }
 }
 
-# =========================
-# Auth / Passwords
-# =========================
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
@@ -99,21 +60,14 @@ TIME_ZONE = os.getenv("DJANGO_TIME_ZONE", "America/Sao_Paulo")
 USE_I18N = True
 USE_TZ = True
 
-# =========================
-# Static
-# =========================
 STATIC_URL = "static/"
 STATIC_ROOT = os.getenv("DJANGO_STATIC_ROOT", str(BASE_DIR / "staticfiles"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# =========================
-# CORS / CSRF (Frontend localhost:3000)
-# =========================
 CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL", "1") == "1"
 CORS_ALLOW_CREDENTIALS = True
 
-# Se você quiser travar, troque para lista fixa e coloque CORS_ALLOW_ALL_ORIGINS=False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -124,9 +78,6 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-# =========================
-# DRF
-# =========================
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
@@ -138,15 +89,10 @@ REST_FRAMEWORK = {
     ],
 }
 
-# =========================
-# Logging (mostra motivo real do 400 no console)
-# =========================
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "handlers": {
-        "console": {"class": "logging.StreamHandler"},
-    },
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
     "loggers": {
         "django.request": {
             "handlers": ["console"],
