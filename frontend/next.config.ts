@@ -9,15 +9,28 @@ const nextConfig: NextConfig = {
    * Permite que o browser chame o backend via o próprio Next, evitando
    * depender de hostnames de rede Docker (ex: "backend") no client.
    *
-   * Requisicoes do tipo:
+   * Requisições do tipo:
    *   /api/v1/...  ->  ${API_URL}/api/v1/...
    *
    * Observação:
-   * - API_URL deve estar definido no container do frontend (docker-compose).
-   * - Se não estiver, cai para http://localhost:8000.
+   * - API_URL pode estar definido no container do frontend (docker-compose).
+   * - Se não estiver, escolhe automaticamente:
+   *   - produção (Docker): http://backend:8000
+   *   - desenvolvimento:   http://localhost:8000
    */
   async rewrites() {
-    const apiUrl = (process.env.API_URL || "http://localhost:8000").replace(/\/+$/, "");
+    /**
+     * Docker fix:
+     * - Dentro do container do frontend, "localhost" aponta para o PRÓPRIO container.
+     * - Se esta rewrite usar "http://localhost:8000", o Next tentará acessar o backend
+     *   no container errado e retornará ECONNREFUSED.
+     */
+    const defaultApiUrl =
+      process.env.NODE_ENV === "production"
+        ? "http://backend:8000"
+        : "http://localhost:8000";
+
+    const apiUrl = (process.env.API_URL || defaultApiUrl).replace(/\/+$/, "");
 
     return [
       {

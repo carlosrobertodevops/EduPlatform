@@ -1,7 +1,7 @@
 services:
   db:
     image: mysql:8.0
-    container_name: grfcourses_db
+    container_name: db
     command: >
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
@@ -27,7 +27,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
-    container_name: grfcourses_phpmyadmin
+    container_name: phpmyadmin
     restart: unless-stopped
     depends_on:
       db:
@@ -46,7 +46,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: grfcourses_backend
+    container_name: backend
     environment:
       DJANGO_DEBUG: ${DJANGO_DEBUG:-0}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me}
@@ -81,11 +81,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: frontend
     environment:
       NODE_ENV: ${NODE_ENV:-production}
 
       # Browser (client)
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
 
       # Server (container-to-container)
       API_URL: ${API_URL:-http://backend:8000}
@@ -111,6 +112,5 @@ services:
 
 volumes:
   db_data:
-  grfcourses_db_data:
-  grfcourses_backend_static:
-  grfcourses_backend_media:
+  backend_static:
+  backend_media:
