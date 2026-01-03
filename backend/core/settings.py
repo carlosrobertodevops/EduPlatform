@@ -21,9 +21,15 @@ SECRET_KEY = config("DJANGO_SECRET_KEY")
 
 DEBUG = config("DJANGO_DEBUG", default="False") in ["True", "true", "1", "yes", "YES"]
 
-ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", default="127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = config(
+    "DJANGO_ALLOWED_HOSTS", default="127.0.0.1,localhost,backend,api"
+).split(",")
 
 APPEND_SLASH = False
+
+CSRF_TRUSTED_ORIGINS = config(
+    "DJANGO_CSRF_TRUSTED_ORIGINS", default="http://127.0.0.1:3000,http://localhost:3000"
+).split(",")
 
 BASE_URL = config("BASE_URL", default="http://127.0.0.1:8000")
 FRONTEND_BASE_URL = config("FRONTEND_URL", default="http://127.0.0.1:3000")

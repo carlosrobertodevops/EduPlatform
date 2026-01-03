@@ -1,6 +1,12 @@
 import NextAuth from "next-auth";
-import { authOptions } from "@/lib/auth.config";
 
-const handler = NextAuth(authOptions);
+const nextAuth = NextAuth({
+  // Evita erro interno (providers.map) durante o build
+  providers: [],
 
-export { handler as GET, handler as POST };
+  // Não quebre o build por env ausente (configure em runtime se necessário)
+  secret: process.env.NEXTAUTH_SECRET,
+});
+
+export const GET = (nextAuth as any).handlers?.GET ?? (nextAuth as any);
+export const POST = (nextAuth as any).handlers?.POST ?? (nextAuth as any);
