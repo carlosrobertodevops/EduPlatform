@@ -1,3 +1,30 @@
+import axios from "axios";
+
+const isServer = typeof window === "undefined";
+
+/**
+ * - No browser: usa NEXT_PUBLIC_API_URL (host -> backend exposto)
+ * - No server (dentro do container): usa API_URL (rede Docker -> backend service)
+ */
+const baseURL = isServer
+  ? process.env.API_URL
+  : process.env.NEXT_PUBLIC_API_URL;
+
+if (!baseURL) {
+  throw new Error(
+    "API base URL não definida. Configure API_URL (server) e NEXT_PUBLIC_API_URL (browser) no .env",
+  );
+}
+
+const api = axios.create({
+  baseURL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+export default api;
+
 // import axios, { AxiosError } from "axios";
 
 // type Props = {
@@ -119,57 +146,57 @@
 
 // export default api;
 
-import axios, { AxiosError } from "axios";
+// import axios, { AxiosError } from "axios";
 
-type ApiErrorPayload = {
-  detail?: string;
-  errors?: unknown;
-  [key: string]: unknown;
-};
+// type ApiErrorPayload = {
+//   detail?: string;
+//   errors?: unknown;
+//   [key: string]: unknown;
+// };
 
-function normalizeBaseUrl(raw?: string) {
-  if (!raw) return "";
-  return raw.replace(/\/+$/, "");
-}
+// function normalizeBaseUrl(raw?: string) {
+//   if (!raw) return "";
+//   return raw.replace(/\/+$/, "");
+// }
 
-/**
- * Importante (Docker / Browser):
- * - No CLIENT (browser), usamos baseURL "" para chamar /api/v1/* no mesmo host do Next.
- *   O proxy é feito via next.config.ts (rewrites) para o backend.
- * - No SERVER (Next / NextAuth), usamos API_URL (container-to-container) ou NEXT_PUBLIC_API_URL.
- */
-const isServer = typeof window === "undefined";
+// /**
+//  * Importante (Docker / Browser):
+//  * - No CLIENT (browser), usamos baseURL "" para chamar /api/v1/* no mesmo host do Next.
+//  *   O proxy é feito via next.config.ts (rewrites) para o backend.
+//  * - No SERVER (Next / NextAuth), usamos API_URL (container-to-container) ou NEXT_PUBLIC_API_URL.
+//  */
+// const isServer = typeof window === "undefined";
 
-const serverBase =
-  normalizeBaseUrl(process.env.API_URL) || normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) || "http://localhost:8000";
+// const serverBase =
+//   normalizeBaseUrl(process.env.API_URL) || normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) || "http://localhost:8000";
 
-const api = axios.create({
-  baseURL: isServer ? serverBase : "",
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-  timeout: 15000,
-});
+// const api = axios.create({
+//   baseURL: isServer ? serverBase : "",
+//   headers: {
+//     "Content-Type": "application/json",
+//     Accept: "application/json",
+//   },
+//   timeout: 15000,
+// });
 
-api.interceptors.response.use(
-  (response) => response,
-  (err: AxiosError) => {
-    const data = (err.response?.data ?? {}) as ApiErrorPayload;
+// api.interceptors.response.use(
+//   (response) => response,
+//   (err: AxiosError) => {
+//     const data = (err.response?.data ?? {}) as ApiErrorPayload;
 
-    // Mantém compatibilidade com o padrão do backend (detail/success/data)
-    const detail =
-      data.detail ||
-      (typeof data === "string" ? data : undefined) ||
-      (err.message ? `Erro de comunicação: ${err.message}` : "Erro de comunicação.");
+//     // Mantém compatibilidade com o padrão do backend (detail/success/data)
+//     const detail =
+//       data.detail ||
+//       (typeof data === "string" ? data : undefined) ||
+//       (err.message ? `Erro de comunicação: ${err.message}` : "Erro de comunicação.");
 
-    const payload: ApiErrorPayload = {
-      ...data,
-      detail,
-    };
+//     const payload: ApiErrorPayload = {
+//       ...data,
+//       detail,
+//     };
 
-    return Promise.reject(payload);
-  },
-);
+//     return Promise.reject(payload);
+//   },
+// );
 
-export default api;
+// export default api;
