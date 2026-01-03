@@ -36,45 +36,74 @@
 //   return res.data;
 // }
 
-import api from "@/lib/api";
+// import api from "@/lib/api";
 
-type SignUpPayload = {
-  name?: string;
-  email: string;
-  password: string;
+// type SignUpPayload = {
+//   name?: string;
+//   email: string;
+//   password: string;
 
-  // backend espera este
-  password_confirmation?: string;
+//   // backend espera este
+//   password_confirmation?: string;
 
-  // frontend atual usa este
-  confirmPassword?: string;
+//   // frontend atual usa este
+//   confirmPassword?: string;
 
-  // compat (legado)
-  password_confirm?: string;
+//   // compat (legado)
+//   password_confirm?: string;
+// };
+
+// type SignInPayload = {
+//   email: string;
+//   password: string;
+// };
+
+// export async function signUp(payload: SignUpPayload) {
+//   const password_confirmation =
+//     payload.password_confirmation ??
+//     payload.confirmPassword ??
+//     payload.password_confirm;
+
+//   return api.post("/api/v1/accounts/signup/", {
+//     name: payload.name ?? "",
+//     email: payload.email,
+//     password: payload.password,
+//     password_confirmation,
+//   });
+// }
+
+// export async function signIn(payload: SignInPayload) {
+//   return api.post("/api/v1/accounts/signin/", {
+//     email: payload.email,
+//     password: payload.password,
+//   });
+// }
+
+import { api } from "@/lib/api";
+import { SignInForm, SignUpForm } from "@/schemas/auth";
+
+export const signIn = async (data: SignInForm) => {
+  return api<APISignInResponse>({
+    endpoint: "/accounts/signin/",
+    method: "POST",
+    data,
+    withAuth: false,
+  });
 };
 
-type SignInPayload = {
-  email: string;
-  password: string;
+export const signUp = async (data: SignUpForm) => {
+  // Backend espera password_confirm, não confirmPassword
+  const payload = {
+    name: data.name,
+    email: data.email,
+    password: data.password,
+    password_confirm: data.confirmPassword,
+  };
+
+  return api<APISignUpResponse>({
+    endpoint: "/accounts/signup/",
+    method: "POST",
+    data: payload,
+    withAuth: false,
+  });
 };
-
-export async function signUp(payload: SignUpPayload) {
-  const password_confirmation =
-    payload.password_confirmation ??
-    payload.confirmPassword ??
-    payload.password_confirm;
-
-  return api.post("/api/v1/accounts/signup/", {
-    name: payload.name ?? "",
-    email: payload.email,
-    password: payload.password,
-    password_confirmation,
-  });
-}
-
-export async function signIn(payload: SignInPayload) {
-  return api.post("/api/v1/accounts/signin/", {
-    email: payload.email,
-    password: payload.password,
-  });
-}
